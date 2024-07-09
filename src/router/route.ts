@@ -1,12 +1,13 @@
 import express, { Router } from "express";
 
-import { signIn, addRole, getRoles, getRole, editRole, deleteRole, addUser, getUsers, getUser, editUser, signOut, deleteUser } from "../controller/adminController";
+import { signIn, addRole, getRoles, getRole, editRole, deleteRole, addUser, getUsers, getUser, editUser, signOut, deleteUser, forgetPassword } from "../controller/adminController";
 import { imageMulter } from "../utils/multer";
 import { verifyToken } from "../middleware/verifyToken";
 const router: Router = express.Router();
 
 
 router.post("/sign-in", signIn);
+router.post("/forgot-password",forgetPassword)
 router.get("/roles",verifyToken, getRoles);
 router.get("/role/:roleId",verifyToken, getRole);
 router.post("/role",verifyToken, addRole);

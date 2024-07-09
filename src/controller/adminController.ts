@@ -8,6 +8,7 @@ import { Admin } from "../modal/adminModal";
 import AppError from "../utils/appError";
 import catchAsync from "../utils/catchAsync";
 import { User } from "../modal/userModel";
+import sendEmail from "../utils/sendMail";
 
 export const signIn = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -25,17 +26,42 @@ export const signIn = catchAsync(
     }
     const token = jwt.sign({ id: admin._id }, process.env.TOKEN as string, {
       expiresIn: "5d",
-     
     });
- 
+
     res
-    .cookie("access_token", token, {
-      httpOnly: true,
-      maxAge: 5 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === 'production'
-    })
-    .status(200)
-    .json({ message: "Login successfully" });
+      .cookie("access_token", token, {
+        httpOnly: true,
+        maxAge: 5 * 24 * 60 * 60 * 1000,
+        secure: process.env.NODE_ENV === "production",
+      })
+      .status(200)
+      .json({ message: "Login successfully" });
+  }
+);
+
+export const forgetPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+    const user = await Admin.findOne({ email });
+
+    if (!user) {
+      return next(new AppError("User not found, please check your email", 404));
+    }
+
+    const resetURL = `${process.env.BASE_URL}/resetPassword/demoResetToken`;
+    const message = `Forgot your password? Click on the link to reset it: ${resetURL}\nIf you didn't request a password reset, please ignore this email.`;
+
+      await sendEmail({
+        email: user.email,
+        subject: "Your password reset token (valid for 10 minutes)",
+        message,
+      });
+
+      res.status(200).json({
+        status: "success",
+        message: "Token sent to email!",
+      });
+
   }
 );
 
@@ -59,7 +85,7 @@ export const addRole = catchAsync(
 
 export const getRoles = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const roles = await Role.find({isBlock:false});
+    const roles = await Role.find({ isBlock: false });
     res.status(200).json({ success: true, data: roles });
   }
 );
@@ -104,7 +130,9 @@ export const deleteRole = catchAsync(
     if (!roleId) {
       return next(new AppError("Please provide role id", 400));
     }
-    const role = await Role.findByIdAndUpdate(roleId, { $set: { isBlock: true } })
+    const role = await Role.findByIdAndUpdate(roleId, {
+      $set: { isBlock: true },
+    });
     if (!role) {
       return next(new AppError("Role not found", 404));
     }
@@ -165,11 +193,10 @@ export const getUser = catchAsync(
 export const editUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { userId } = req.params;
-    const { name, email, mobile, role,isBlock} = req.body;
+    const { name, email, mobile, role, isBlock } = req.body;
     const imgUrl = req.file?.path;
 
-
-    if (!name || !email || !mobile || !role  || !isBlock) {
+    if (!name || !email || !mobile || !role || !isBlock) {
       return next(
         new AppError(
           "Please provide all required details (name, email, mobile, role,image).",
@@ -203,14 +230,16 @@ export const editUser = catchAsync(
     user.email = email;
     user.mobile = mobile;
     user.role = role;
-    user.isBlock= isBlock
+    user.isBlock = isBlock;
     if (imgUrl) {
       user.profilePhoto = imgUrl;
     }
 
     await user.save();
 
-    res.status(200).json({ success: true, message: "User updated successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "User updated successfully" });
   }
 );
 
@@ -227,7 +256,6 @@ export const deleteUser = catchAsync(
     res.status(200).json({ success: true, message: "Successfully deleted" });
   }
 );
-
 
 export const signOut = catchAsync(async (req, res, next) => {
   res.clearCookie("access_token", {
