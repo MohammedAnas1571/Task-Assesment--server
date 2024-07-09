@@ -59,7 +59,7 @@ export const addRole = catchAsync(
 
 export const getRoles = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const roles = await Role.find();
+    const roles = await Role.find({isBlock:false});
     res.status(200).json({ success: true, data: roles });
   }
 );
@@ -104,7 +104,7 @@ export const deleteRole = catchAsync(
     if (!roleId) {
       return next(new AppError("Please provide role id", 400));
     }
-    const role = await Role.findByIdAndDelete(roleId);
+    const role = await Role.findByIdAndUpdate(roleId, { $set: { isBlock: true } })
     if (!role) {
       return next(new AppError("Role not found", 404));
     }
