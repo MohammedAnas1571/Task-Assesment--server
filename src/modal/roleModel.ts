@@ -5,6 +5,7 @@ const roleSchema = new Schema(
     rolename: {
       type: String,
       required: true,
+    
       
     },
     isBlock: {

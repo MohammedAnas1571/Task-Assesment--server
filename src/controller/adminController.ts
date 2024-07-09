@@ -72,7 +72,7 @@ export const addRole = catchAsync(
       return next(new AppError("Please provide role", 400));
     }
     const uniqueRolename = rolename.toLowerCase();
-    const existingRole = await Role.findOne({ rolename: uniqueRolename });
+    const existingRole = await Role.findOne({ rolename: uniqueRolename ,isDelete:false});
 
     if (existingRole) {
       return next(new AppError("This Rolename is already exist", 409));
@@ -85,7 +85,7 @@ export const addRole = catchAsync(
 
 export const getRoles = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const roles = await Role.find({ isBlock: false });
+    const roles = await Role.find({ isDelete: false });
     res.status(200).json({ success: true, data: roles });
   }
 );
@@ -114,6 +114,14 @@ export const editRole = catchAsync(
     if (!rolename || !isBlock) {
       return next(new AppError("Please provide details", 400));
     }
+
+    const uniqueRolename = rolename.toLowerCase();
+    const existingRole = await Role.findOne({ rolename: uniqueRolename });
+
+    if (existingRole && existingRole._id.toString() !== roleId) {
+      return next(new AppError("This Rolename is already exist", 409));
+    }
+
     const role = await Role.findByIdAndUpdate(roleId, {
       $set: { rolename, isBlock },
     });
@@ -131,7 +139,7 @@ export const deleteRole = catchAsync(
       return next(new AppError("Please provide role id", 400));
     }
     const role = await Role.findByIdAndUpdate(roleId, {
-      $set: { isBlock: true },
+      $set: { isDelete: true },
     });
     if (!role) {
       return next(new AppError("Role not found", 404));
@@ -261,5 +269,5 @@ export const signOut = catchAsync(async (req, res, next) => {
   res.clearCookie("access_token", {
     httpOnly: true,
   });
-  res.status(200).json({ message: "Cookies cleared, signed out successfully" });
+  res.status(200).json({ message: "Logout successfully" });
 });
